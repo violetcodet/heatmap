@@ -123,6 +123,8 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints)
                 if (j < 0 || k < 0 || j >= width || k >= height) continue; 
 
                 dist = sqrt( (j-pt.x)*(j-pt.x) + (k-pt.y)*(k-pt.y) );
+                
+                if(dist>radius) continue; // stop point contributing to pixels outside its radius
 
                 pixVal = (int)(200.0*(dist/radius)+50.0);
                 if (pixVal > 255) pixVal = 255;
