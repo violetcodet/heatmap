@@ -108,6 +108,13 @@ class Heatmap:
             self.area = ((0, 0), (0, 0))
             self.override = 0
 
+        ((east, south), (west, north)) = self.area
+        if self.epsg is not 'EPSG:3785':
+          source = pyproj.Proj(init=self.epsg)
+          dest = pyproj.Proj(init='EPSG:3785')
+          (east,south) = pyproj.transform(source,dest,east,south)
+          (west,north) = pyproj.transform(source,dest,west,north)
+
         if scheme not in self.schemes():
             tmp = "Unknown color scheme: %s.  Available schemes: %s" % (
                 scheme, self.schemes())
@@ -120,9 +127,9 @@ class Heatmap:
         ret = self._heatmap.tx(
             arrPoints, len(arrPoints), size[0], size[1], dotsize,
             arrScheme, arrFinalImage, opacity, self.override,
-            ctypes.c_float(self.area[0][0]), ctypes.c_float(
-                self.area[0][1]),
-            ctypes.c_float(self.area[1][0]), ctypes.c_float(self.area[1][1]), weighted)
+            ctypes.c_float(east), ctypes.c_float(
+                south),
+            ctypes.c_float(west), ctypes.c_float(north), weighted)
 
         if not ret:
             raise Exception("Unexpected error during processing.")
