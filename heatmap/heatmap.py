@@ -75,7 +75,7 @@ class Heatmap:
         if not self._heatmap:
             raise Exception("Heatmap shared library not found in PYTHONPATH.")
 
-    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None):
+    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, weighted=0):
         """
         points  -> an iterable list of tuples, where the contents are the
                    x,y coordinates to plot. e.g., [(1, 1), (2, 2), (3, 3)]
@@ -90,6 +90,7 @@ class Heatmap:
         area    -> Specify bounding coordinates of the output image. Tuple of
                    tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
                    these values are calculated based on the input data.
+        weighted -> Is the data weighted
         """
         self.dotsize = dotsize
         self.opacity = opacity
@@ -108,16 +109,16 @@ class Heatmap:
                 scheme, self.schemes())
             raise Exception(tmp)
 
-        arrPoints = self._convertPoints(points)
+        arrPoints = self._convertPoints(points,weighted)
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
 
         ret = self._heatmap.tx(
-            arrPoints, len(points) * 2, size[0], size[1], dotsize,
+            arrPoints, len(arrPoints), size[0], size[1], dotsize,
             arrScheme, arrFinalImage, opacity, self.override,
             ctypes.c_float(self.area[0][0]), ctypes.c_float(
                 self.area[0][1]),
-            ctypes.c_float(self.area[1][0]), ctypes.c_float(self.area[1][1]))
+            ctypes.c_float(self.area[1][0]), ctypes.c_float(self.area[1][1]), weighted)
 
         if not ret:
             raise Exception("Unexpected error during processing.")
@@ -129,16 +130,22 @@ class Heatmap:
     def _allocOutputBuffer(self):
         return (ctypes.c_ubyte * (self.size[0] * self.size[1] * 4))()
 
-    def _convertPoints(self, pts):
+    def _convertPoints(self, pts, weighted):
         """ flatten the list of tuples, convert into ctypes array """
 
         #TODO is there a better way to do this??
         flat = []
-        for i, j in pts:
+        if (weighted):
+          for i, j, k in pts:
+            flat.append(i)
+            flat.append(j)
+            flat.append(k)
+        else:
+          for i, j in pts:
             flat.append(i)
             flat.append(j)
         #build array of input points
-        arr_pts = (ctypes.c_float * (len(pts) * 2))(*flat)
+        arr_pts = (ctypes.c_float * (len(flat))) (*flat)
         return arr_pts
 
     def _convertScheme(self, scheme):

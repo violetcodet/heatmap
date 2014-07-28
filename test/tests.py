@@ -60,6 +60,19 @@ class TestHeatmap(unittest.TestCase):
     def test_invalid_heatmap(self):
         self.assertRaises(Exception, self.heatmap.heatmap, ([],))
 
+    def test_heatmap_weighted(self):
+        pts = [(random.random(), random.random()) for x in range(400)]
+        # this should also generate a warning on stderr of overly dense
+        img = self.heatmap.heatmap(pts)
+        img.save("07-400-normal.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        img = self.heatmap.heatmap(map( lambda (x,y) : (x,y,1), pts), weighted=1)
+        img.save("07-400-100percent.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        img = self.heatmap.heatmap(map( lambda (x,y) : (x,y,.75), pts), weighted=1)
+        img.save("07-400-75percent.png")
+        self.assertTrue(isinstance(img, Image.Image))
+
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):
         keys = colorschemes.valid_schemes()

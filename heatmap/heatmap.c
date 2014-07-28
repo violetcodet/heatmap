@@ -3,6 +3,9 @@
 #include <math.h>
 #include <string.h>
 
+float constant = 50.0;
+float multiplier = 200.0;
+
 struct info
 {
 	float minX;
@@ -33,7 +36,7 @@ BOOL WINAPI DllMain(    HINSTANCE hinstDLL,  // handle to DLL module
 #endif
 
 //walk the list of points, get the boundary values    
-void getBounds(struct info *inf, float *points, unsigned int cPoints)
+void getBounds(struct info *inf, float *points, unsigned int cPoints, int weighted)
 {
     unsigned int i = 0;
 
@@ -43,8 +46,11 @@ void getBounds(struct info *inf, float *points, unsigned int cPoints)
     float maxX = points[i];
     float maxY = points[i+1];
 
+    int inc = 2;
+    if (weighted) inc = 3;
+
     //then iterate over the list and find the max/min values
-    for(i = 0; i < cPoints; i=i+2)
+    for(i = 0; i < cPoints; i=i+inc)
     {
         float x = points[i];
         float y = points[i+1];
@@ -86,7 +92,7 @@ struct point translate(struct info *inf, struct point pt)
     return pt;
 }
 
-unsigned char* calcDensity(struct info *inf, float *points, int cPoints)
+unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int weighted)
 {
     int width = inf->width;
     int height = inf->height;
@@ -110,7 +116,10 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints)
         pixels[i] = 0xff;
     }
 
-    for(i = 0; i < cPoints; i=i+2)
+    int inc = 2;
+    if (weighted) inc = 3;
+
+    for(i = 0; i < cPoints; i=i+inc)
     {
         pt.x = points[i];
         pt.y = points[i+1];
@@ -126,7 +135,14 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints)
                 
                 if(dist>radius) continue; // stop point contributing to pixels outside its radius
 
-                pixVal = (int)(200.0*(dist/radius)+50.0);
+                if (weighted)
+                {
+                  pixVal = (int)((multiplier*(dist/radius)+constant)/points[i+2]);
+                }
+                else
+                {
+                  pixVal = (int)(multiplier*(dist/radius)+constant);
+                }
                 if (pixVal > 255) pixVal = 255;
 
                 ndx = k*width + j;
@@ -149,7 +165,6 @@ unsigned char *colorize(struct info *inf, unsigned char* pixels_bw, int *scheme,
 {
     int width = inf->width;
     int height = inf->height;
-    int dotsize = inf->dotsize;
     
     int i = 0;
     int pix = 0;
@@ -192,7 +207,7 @@ unsigned char *tx(float *points,
                   unsigned char *pix_color, 
                   int opacity, 
                   int boundsOverride, 
-                  float minX, float minY, float maxX, float maxY)
+                  float minX, float minY, float maxX, float maxY, int weighted)
 {
     unsigned char *pixels_bw = NULL;
 
@@ -218,7 +233,7 @@ unsigned char *tx(float *points,
     }
     else
     {
-        getBounds(&inf, points, cPoints);
+        getBounds(&inf, points, cPoints, weighted);
     }
 
     #ifdef DEBUG
@@ -227,7 +242,7 @@ unsigned char *tx(float *points,
 
     //iterate through points, place a dot at each center point
     //and set pix value from 0 - 255 using multiply method for radius [dotsize].
-    pixels_bw = calcDensity(&inf, points, cPoints);
+    pixels_bw = calcDensity(&inf, points, cPoints, weighted);
 
     //using provided color scheme and opacity, update pixel value to RGBA values
     pix_color = colorize(&inf, pixels_bw, scheme, pix_color, opacity);
