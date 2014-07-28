@@ -24,13 +24,13 @@ class TestHeatmap(unittest.TestCase):
     
     def test_heatmap_vert_line(self):
         pts = [(50, x) for x in range(100)]
-        img = self.heatmap.heatmap(pts, area=((0, 0), (200, 200)))
+        img = self.heatmap.heatmap(pts, area=((0, 0), (200, 200)),epsg='EPSG:3785')
         img.save("02-vert-line.png")
         self.assertTrue(isinstance(img, Image.Image))
 
     def test_heatmap_horz_line(self):
         pts = [(x, 300) for x in range(600, 700)]
-        img = self.heatmap.heatmap(pts, size=(800,400), area=((0, 0), (800, 400)))
+        img = self.heatmap.heatmap(pts, size=(800,400), area=((0, 0), (800, 400)),epsg='EPSG:3785')
         img.save("03-horz-line.png")
         self.assertTrue(isinstance(img, Image.Image))
 
@@ -46,7 +46,7 @@ class TestHeatmap(unittest.TestCase):
         pts.extend([(4850, x*100) for x in range(2, 50)])
         pts.extend([(x*100, 4850) for x in range(2, 50)])
         pts.extend([(50, x*100) for x in range(2, 50)])
-        img = self.heatmap.heatmap(pts, dotsize=100, area=((0,0), (5000, 5000)))
+        img = self.heatmap.heatmap(pts, dotsize=100, area=((0,0), (5000, 5000)),epsg='EPSG:3785')
         img.save("05-square.png")
         self.assertTrue(isinstance(img, Image.Image))
 
@@ -61,7 +61,7 @@ class TestHeatmap(unittest.TestCase):
         self.assertRaises(Exception, self.heatmap.heatmap, ([],))
 
     def test_heatmap_weighted(self):
-        pts = [(random.random(), random.random()) for x in range(400)]
+        pts = [(random.uniform(30,40), random.uniform(-30,-40)) for x in range(400)]
         # this should also generate a warning on stderr of overly dense
         img = self.heatmap.heatmap(pts)
         img.save("07-400-normal.png")

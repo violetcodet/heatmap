@@ -3,6 +3,7 @@ import sys
 import ctypes
 import platform
 import math
+import pyproj
 
 import colorschemes
 
@@ -75,7 +76,7 @@ class Heatmap:
         if not self._heatmap:
             raise Exception("Heatmap shared library not found in PYTHONPATH.")
 
-    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, weighted=0):
+    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, weighted=0, epsg='EPSG:4326'):
         """
         points  -> an iterable list of tuples, where the contents are the
                    x,y coordinates to plot. e.g., [(1, 1), (2, 2), (3, 3)]
@@ -91,12 +92,14 @@ class Heatmap:
                    tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
                    these values are calculated based on the input data.
         weighted -> Is the data weighted
+        epsg    -> epsg code of the source
         """
         self.dotsize = dotsize
         self.opacity = opacity
         self.size = size
         self.points = points
         self.weighted = weighted
+        self.epsg = epsg
 
         if area is not None:
             self.area = area
@@ -110,7 +113,7 @@ class Heatmap:
                 scheme, self.schemes())
             raise Exception(tmp)
 
-        arrPoints = self._convertPoints()
+        arrPoints = self._convertPoints(weighted,epsg)
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
 
@@ -131,7 +134,7 @@ class Heatmap:
     def _allocOutputBuffer(self):
         return (ctypes.c_ubyte * (self.size[0] * self.size[1] * 4))()
 
-    def _convertPoints(self):
+    def _convertPoints(self, weighted, epsg):
         """ flatten the list of tuples, convert into ctypes array """
 
         flat = []
@@ -148,6 +151,19 @@ class Heatmap:
           self.points = flat
         else:
           flat = self.points
+
+        #convert if required
+        if epsg is not 'EPSG:3785':
+          source = pyproj.Proj(init=epsg)
+          dest = pyproj.Proj(init='EPSG:3785') 
+          inc = 2
+          if weighted:
+            inc = 3
+          for i in range(0, len(flat), inc):
+            (x,y) = pyproj.transform(source,dest,flat[i],flat[i+1])
+            flat[i] = x
+            flat[i+1] = y
+
         #build array of input points
         arr_pts = (ctypes.c_float * (len(flat))) (*flat)
         return arr_pts
@@ -201,6 +217,11 @@ class Heatmap:
             ((west, south), (east, north)) = self.area
         else:
             ((west, south), (east, north)) = self._ranges()
+        if self.epsg is not 'EPSG:4326':
+          source = pyproj.Proj(init=self.epsg)
+          dest = pyproj.Proj(init='EPSG:4326')
+          (east,south) = pyproj.transform(source,dest,east,south)
+          (west,north) = pyproj.transform(source,dest,west,north)
 
         bytes = self.KML % (tilePath, north, south, east, west)
         file(kmlFile, "w").write(bytes)
