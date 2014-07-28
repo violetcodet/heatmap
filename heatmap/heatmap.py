@@ -92,7 +92,7 @@ class Heatmap:
                    tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
                    these values are calculated based on the input data.
         weighted -> Is the data weighted
-        epsg    -> epsg code of the source
+        epsg    -> epsg code of the source, set to None to ignore
         """
         self.dotsize = dotsize
         self.opacity = opacity
@@ -109,7 +109,7 @@ class Heatmap:
             self.override = 0
 
         ((east, south), (west, north)) = self.area
-        if self.epsg is not 'EPSG:3785':
+        if self.epsg is not None and self.epsg is not 'EPSG:3785':
           source = pyproj.Proj(init=self.epsg)
           dest = pyproj.Proj(init='EPSG:3785')
           (east,south) = pyproj.transform(source,dest,east,south)
@@ -160,7 +160,7 @@ class Heatmap:
           flat = self.points
 
         #convert if required
-        if epsg is not 'EPSG:3785':
+        if epsg is not None and epsg is not 'EPSG:3785':
           source = pyproj.Proj(init=epsg)
           dest = pyproj.Proj(init='EPSG:3785') 
           inc = 2
@@ -224,6 +224,7 @@ class Heatmap:
             ((west, south), (east, north)) = self.area
         else:
             ((west, south), (east, north)) = self._ranges()
+        #need to error if epsg is not set
         if self.epsg is not 'EPSG:4326':
           source = pyproj.Proj(init=self.epsg)
           dest = pyproj.Proj(init='EPSG:4326')
