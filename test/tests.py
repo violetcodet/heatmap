@@ -73,6 +73,15 @@ class TestHeatmap(unittest.TestCase):
         img.save("07-400-75percent.png")
         self.assertTrue(isinstance(img, Image.Image))
 
+    def test_heatmap_random_flat(self):
+        pts = [(random.random(),random.random()) for x in range(400)]
+        img = self.heatmap.heatmap(pts)
+        img.save("08-400-normal.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        img = self.heatmap.heatmap(sum(pts,()))
+        img.save("08-400-flat.png")
+        self.assertTrue(isinstance(img, Image.Image))
+
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):
         keys = colorschemes.valid_schemes()

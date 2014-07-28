@@ -133,17 +133,19 @@ class Heatmap:
     def _convertPoints(self, pts, weighted):
         """ flatten the list of tuples, convert into ctypes array """
 
-        #TODO is there a better way to do this??
         flat = []
-        if (weighted):
-          for i, j, k in pts:
-            flat.append(i)
-            flat.append(j)
-            flat.append(k)
+        if isinstance(pts[0],tuple) or isinstance(pts[0],list):
+          if (weighted):
+            for i, j, k in pts:
+              flat.append(i)
+              flat.append(j)
+              flat.append(k)
+          else:
+            for i, j in pts:
+              flat.append(i)
+              flat.append(j)
         else:
-          for i, j in pts:
-            flat.append(i)
-            flat.append(j)
+          flat = pts
         #build array of input points
         arr_pts = (ctypes.c_float * (len(flat))) (*flat)
         return arr_pts
