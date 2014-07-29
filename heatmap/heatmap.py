@@ -92,8 +92,8 @@ class Heatmap:
                    tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
                    these values are calculated based on the input data.
         weighted -> Is the data weighted
-        srcepsg    -> epsg code of the source, set to None to ignore
-        dstepsg    -> epsg code of the destination, set to None to ignore, defaults to EPSG:3857 (Cylindrical Mercator). Due to linear interpolation in heatmap.c it only makes sense to use cylindrical linear projections. If outputting to KML/WGS84 use EPSG:4087 (World Equidistant Cylindrical).
+        srcepsg    -> epsg code of the source, set to None to ignore. If outputting to KML for google earth client overlay and have WGS84 or World Equidistant Cylindrical coords leave as None to save processing.
+        dstepsg    -> epsg code of the destination, ignored if srcepsg is not set. Defaults to EPSG:3857 (Cylindrical Mercator). Due to linear interpolation in heatmap.c it only makes sense to use linear output projections. If outputting to KML for google earth client overlay use EPSG:4087 (World Equidistant Cylindrical).
         """
         self.dotsize = dotsize
         self.opacity = opacity
