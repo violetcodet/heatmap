@@ -24,13 +24,13 @@ class TestHeatmap(unittest.TestCase):
     
     def test_heatmap_vert_line(self):
         pts = [(50, x) for x in range(100)]
-        img = self.heatmap.heatmap(pts, area=((0, 0), (200, 200)),epsg='EPSG:3785')
+        img = self.heatmap.heatmap(pts, area=((0, 0), (200, 200)))
         img.save("02-vert-line.png")
         self.assertTrue(isinstance(img, Image.Image))
 
     def test_heatmap_horz_line(self):
         pts = [(x, 300) for x in range(600, 700)]
-        img = self.heatmap.heatmap(pts, size=(800,400), area=((0, 0), (800, 400)),epsg='EPSG:3785')
+        img = self.heatmap.heatmap(pts, size=(800,400), area=((0, 0), (800, 400)))
         img.save("03-horz-line.png")
         self.assertTrue(isinstance(img, Image.Image))
 
@@ -46,7 +46,7 @@ class TestHeatmap(unittest.TestCase):
         pts.extend([(4850, x*100) for x in range(2, 50)])
         pts.extend([(x*100, 4850) for x in range(2, 50)])
         pts.extend([(50, x*100) for x in range(2, 50)])
-        img = self.heatmap.heatmap(pts, dotsize=100, area=((0,0), (5000, 5000)),epsg='EPSG:3785')
+        img = self.heatmap.heatmap(pts, dotsize=100, area=((0,0), (5000, 5000)))
         img.save("05-square.png")
         self.assertTrue(isinstance(img, Image.Image))
 
@@ -124,6 +124,36 @@ class TestHeatmap(unittest.TestCase):
       img.save("11-400-areaTestNormal.png")
       self.assertTrue(isinstance(img, Image.Image))
       self.heatmap.saveKML("11-400-areaTestNormal.kml")
+
+    def test_heatmap_random_proj(self):
+        pts = [(random.uniform(-180,180),random.uniform(-90,90)) for x in range(400)]
+        img = self.heatmap.heatmap(pts)
+        img.save("09-400-normal.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("09-400-normal.kml")
+        img = self.heatmap.heatmap(pts,srcepsg='EPSG:4326')
+        img.save("09-400-EPSG3857.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("09-400-EPSG3857.kml")
+        img = self.heatmap.heatmap(pts, srcepsg='EPSG:4326',dstepsg='EPSG:4087')
+        img.save("09-400-EPSG4087.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("09-400-EPSG4087.kml")
+
+    def test_heatmap_proj(self):
+        pts = [(x*2,x) for x in range(-89,89)]
+        img = self.heatmap.heatmap(pts)
+        img.save("10-400-normal.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("10-400-normal.kml")
+        img = self.heatmap.heatmap(pts,srcepsg='EPSG:4326')
+        img.save("10-400-EPSG3857.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("10-400-EPSG3857.kml")
+        img = self.heatmap.heatmap(pts, srcepsg='EPSG:4326',dstepsg='EPSG:4087')
+        img.save("10-400-EPSG4087.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("10-400-EPSG4087.kml")
 
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):

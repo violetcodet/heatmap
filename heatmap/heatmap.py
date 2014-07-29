@@ -76,7 +76,7 @@ class Heatmap:
         if not self._heatmap:
             raise Exception("Heatmap shared library not found in PYTHONPATH.")
 
-    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, weighted=0, epsg='EPSG:4326'):
+    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, weighted=0, srcepsg=None, dstepsg='EPSG:3857'):
         """
         points  -> an iterable list of tuples, where the contents are the
                    x,y coordinates to plot. e.g., [(1, 1), (2, 2), (3, 3)]
@@ -92,14 +92,16 @@ class Heatmap:
                    tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
                    these values are calculated based on the input data.
         weighted -> Is the data weighted
-        epsg    -> epsg code of the source, set to None to ignore
+        srcepsg    -> epsg code of the source, set to None to ignore
+        dstepsg    -> epsg code of the destination, set to None to ignore, defaults to EPSG:3857 (Cylindrical Mercator). Due to linear interpolation in heatmap.c it only makes sense to use cylindrical linear projections. If outputting to KML/WGS84 use EPSG:4087 (World Equidistant Cylindrical).
         """
         self.dotsize = dotsize
         self.opacity = opacity
         self.size = size
         self.points = points
         self.weighted = weighted
-        self.epsg = epsg
+        self.srcepsg = srcepsg
+        self.dstepsg = dstepsg
 
         if area is not None:
             self.area = area
@@ -109,9 +111,9 @@ class Heatmap:
             self.override = 0
 
         ((east, south), (west, north)) = self.area
-        if self.epsg is not None and self.epsg is not 'EPSG:3785':
-          source = pyproj.Proj(init=self.epsg)
-          dest = pyproj.Proj(init='EPSG:3785')
+        if self.srcepsg is not None and self.srcepsg is not self.dstepsg:
+          source = pyproj.Proj(init=self.srcepsg)
+          dest = pyproj.Proj(init=self.dstepsg)
           (east,south) = pyproj.transform(source,dest,east,south)
           (west,north) = pyproj.transform(source,dest,west,north)
 
@@ -120,7 +122,7 @@ class Heatmap:
                 scheme, self.schemes())
             raise Exception(tmp)
 
-        arrPoints = self._convertPoints(weighted,epsg)
+        arrPoints = self._convertPoints(weighted)
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
 
@@ -141,7 +143,7 @@ class Heatmap:
     def _allocOutputBuffer(self):
         return (ctypes.c_ubyte * (self.size[0] * self.size[1] * 4))()
 
-    def _convertPoints(self, weighted, epsg):
+    def _convertPoints(self, weighted):
         """ flatten the list of tuples, convert into ctypes array """
 
         flat = []
@@ -160,9 +162,9 @@ class Heatmap:
           flat = self.points
 
         #convert if required
-        if epsg is not None and epsg is not 'EPSG:3785':
-          source = pyproj.Proj(init=epsg)
-          dest = pyproj.Proj(init='EPSG:3785') 
+        if self.srcepsg is not None and self.dstepsg is not None and self.srcepsg is not self.dstepsg:
+          source = pyproj.Proj(init=self.srcepsg)
+          dest = pyproj.Proj(init=self.dstepsg) 
           inc = 2
           if weighted:
             inc = 3
@@ -224,9 +226,8 @@ class Heatmap:
             ((west, south), (east, north)) = self.area
         else:
             ((west, south), (east, north)) = self._ranges()
-        #need to error if epsg is not set
-        if self.epsg is not 'EPSG:4326':
-          source = pyproj.Proj(init=self.epsg)
+        if self.srcepsg is not None and self.srcepsg is not 'EPSG:4326':
+          source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init='EPSG:4326')
           (east,south) = pyproj.transform(source,dest,east,south)
           (west,north) = pyproj.transform(source,dest,west,north)
