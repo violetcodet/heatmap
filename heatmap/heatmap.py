@@ -3,7 +3,13 @@ import sys
 import ctypes
 import platform
 import math
-import pyproj
+use_pyproj = False
+try:
+  import pyproj
+  use_pyproj = True
+except:
+  pass
+  
 
 import colorschemes
 
@@ -103,6 +109,9 @@ class Heatmap:
         self.srcepsg = srcepsg
         self.dstepsg = dstepsg
 
+        if srcepsg and not use_pyproj:
+          sys.stderr.write('WARNING: pyproj not avaialble, Source and Destination ESPG will be ignored\n')
+
         if area is not None:
             self.area = area
             self.override = 1
@@ -111,7 +120,7 @@ class Heatmap:
             self.override = 0
 
         ((east, south), (west, north)) = self.area
-        if self.srcepsg is not None and self.srcepsg is not self.dstepsg:
+        if use_pyproj and self.srcepsg is not None and self.srcepsg is not self.dstepsg:
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init=self.dstepsg)
           (east,south) = pyproj.transform(source,dest,east,south)
@@ -162,7 +171,7 @@ class Heatmap:
           flat = self.points
 
         #convert if required
-        if self.srcepsg is not None and self.dstepsg is not None and self.srcepsg is not self.dstepsg:
+        if use_pyproj and self.srcepsg is not None and self.dstepsg is not None and self.srcepsg is not self.dstepsg:
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init=self.dstepsg) 
           inc = 2
@@ -226,7 +235,7 @@ class Heatmap:
             ((west, south), (east, north)) = self.area
         else:
             ((west, south), (east, north)) = self._ranges()
-        if self.srcepsg is not None and self.srcepsg is not 'EPSG:4326':
+        if use_pyproj and self.srcepsg is not None and self.srcepsg is not 'EPSG:4326':
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init='EPSG:4326')
           (east,south) = pyproj.transform(source,dest,east,south)
