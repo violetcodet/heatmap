@@ -1,9 +1,22 @@
 import os
 import glob
 
-from distutils.core import setup, Extension
-from distutils.command.install import install
-from distutils.command.build_ext import build_ext
+with_setuptools = False
+if 'USE_SETUPTOOLS' in os.environ or 'pip' in __file__:
+  try:
+    from setuptools.command.install import install
+    from setuptools import setup
+    from setuptools import Extension
+    from setuptools.command.build_ext import build_ext
+    with_setuptools = True
+  except:
+    with_setuptools = False
+
+if with_setuptools is False:
+ from distutils.command.install import install
+ from distutils.core import setup
+ from distutils.core import Extension
+ from distutils.command.build_ext import build_ext
 
 # sorry for this, welcome feedback on the "right" way.
 # shipping pre-compiled bainries on windows, have
