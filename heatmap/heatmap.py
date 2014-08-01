@@ -110,7 +110,7 @@ class Heatmap:
         self.dstepsg = dstepsg
 
         if srcepsg and not use_pyproj:
-          sys.stderr.write('WARNING: pyproj not avaialble, Source and Destination ESPG will be ignored\n')
+          sys.stderr.write('WARNING: pyproj not available, Source and Destination EPSG will be ignored\n')
 
         if area is not None:
             self.area = area
