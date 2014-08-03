@@ -170,8 +170,10 @@ class Heatmap:
         else:
           flat = self.points
 
-        #convert if required
+        #convert if required, need to copy as may use points later for _ranges.
+        #better to just calc all the time?
         if use_pyproj and self.srcepsg is not None and self.dstepsg is not None and self.srcepsg is not self.dstepsg:
+          converted =list(flat)
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init=self.dstepsg) 
           inc = 2
@@ -179,11 +181,11 @@ class Heatmap:
             inc = 3
           for i in range(0, len(flat), inc):
             (x,y) = pyproj.transform(source,dest,flat[i],flat[i+1])
-            flat[i] = x
-            flat[i+1] = y
-
-        #build array of input points
-        arr_pts = (ctypes.c_float * (len(flat))) (*flat)
+            converted[i] = x
+            converted[i+1] = y
+          arr_pts = (ctypes.c_float * (len(converted))) (*converted)
+        else:
+          arr_pts = (ctypes.c_float * (len(flat))) (*flat)
         return arr_pts
 
     def _convertScheme(self, scheme):
