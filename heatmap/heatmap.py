@@ -198,9 +198,9 @@ class Heatmap:
         self.img.save(tilePath)
 
         if self.override:
-            ((east, south), (west, north)) = self.area
+            ((west, south), (east, north)) = self.area
         else:
-            ((east, south), (west, north)) = self._ranges()
+            ((west, south), (east, north)) = self._ranges()
 
         bytes = self.KML % (tilePath, north, south, east, west)
         file(kmlFile, "w").write(bytes)

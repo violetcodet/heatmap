@@ -91,6 +91,40 @@ class TestHeatmap(unittest.TestCase):
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("08-400-arrayofarrays.kml")
 
+    def test_heatmap_area(self):
+      MAX_SIZE=8192
+      PPD=100
+      dotsize=100
+      pts = [[x*2,x, 1 if x==0 else 0.75] for x in range(-45,46)]
+      pts = sum(pts,[])
+      west = pts[0]
+      south = pts[1]
+      east = west
+      north = south
+      for i in range(0,len(pts),3):
+          west = min(pts[i], west)
+          south = min(pts[i+1], south)
+          east = max(pts[i], east)
+          north = max(pts[i+1], north)
+      width = int((east - west)*PPD + dotsize/2)
+      height = int((north - south)*PPD + dotsize/2)
+      largestVal = max(width,height)
+      if largestVal > MAX_SIZE:
+         scale = float(MAX_SIZE)/largestVal
+         height = int(height*scale)
+         width = int(width*scale)
+         PPD = float((width-dotsize/2))/(east-west)
+      dotDegrees = dotsize/2/PPD
+      bounds = ((west-dotDegrees, south-dotDegrees),(east+dotDegrees,north+dotDegrees))
+      img = self.heatmap.heatmap(pts, size = (width, height), dotsize = dotsize, area=bounds, weighted = 1)
+      img.save("11-400-areaTest.png")
+      self.assertTrue(isinstance(img, Image.Image))
+      self.heatmap.saveKML("11-400-areaTest.kml")
+      img = self.heatmap.heatmap(pts, size = (width, height), dotsize = dotsize, weighted = 1)
+      img.save("11-400-areaTestNormal.png")
+      self.assertTrue(isinstance(img, Image.Image))
+      self.heatmap.saveKML("11-400-areaTestNormal.kml")
+
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):
         keys = colorschemes.valid_schemes()
