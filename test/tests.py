@@ -77,17 +77,15 @@ class TestHeatmap(unittest.TestCase):
         self.heatmap.saveKML("07-400-75percent.kml")
 
     def test_heatmap_random_datatypes(self):
-        pts = [random.random() for x in range(800)]
-        img = self.heatmap.heatmap(pts)
+        pts = [[random.random(),random.random()] for x in range(400)]
+        img = self.heatmap.heatmap(sum(pts,[]))
         img.save("08-400-array.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("08-400-array.kml")
-        pts = [(random.random(),random.random()) for x in range(400)]
-        img = self.heatmap.heatmap(pts)
+        img = self.heatmap.heatmap(map(lambda (x,y) : (x,y), pts))
         img.save("08-400-arrayoftuples.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("08-400-arrayoftuples.kml")
-        pts = [[random.random(),random.random()] for x in range(400)]
         img = self.heatmap.heatmap(pts)
         img.save("08-400-arrayofarrays.png")
         self.assertTrue(isinstance(img, Image.Image))

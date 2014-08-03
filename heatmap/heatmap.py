@@ -110,7 +110,7 @@ class Heatmap:
                 scheme, self.schemes())
             raise Exception(tmp)
 
-        arrPoints = self._convertPoints(points)
+        arrPoints = self._convertPoints()
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
 
@@ -131,22 +131,23 @@ class Heatmap:
     def _allocOutputBuffer(self):
         return (ctypes.c_ubyte * (self.size[0] * self.size[1] * 4))()
 
-    def _convertPoints(self, pts):
+    def _convertPoints(self):
         """ flatten the list of tuples, convert into ctypes array """
 
         flat = []
-        if isinstance(pts[0],tuple) or isinstance(pts[0],list):
+        if isinstance(self.points[0],tuple) or isinstance(self.points[0],list):
           if (self.weighted):
-            for i, j, k in pts:
+            for i, j, k in self.points:
               flat.append(i)
               flat.append(j)
               flat.append(k)
           else:
-            for i, j in pts:
+            for i, j in self.points:
               flat.append(i)
               flat.append(j)
+          self.points = flat
         else:
-          flat = pts
+          flat = self.points
         #build array of input points
         arr_pts = (ctypes.c_float * (len(flat))) (*flat)
         return arr_pts
@@ -164,41 +165,21 @@ class Heatmap:
             ctypes.c_int * (len(colorschemes.schemes[scheme]) * 3))(*flat)
         return arr_cs
 
-    def _ranges(self, points):
+    def _ranges(self):
         """ walks the list of points and finds the
         max/min x & y values in the set """
-        if isinstance(points[0],tuple) or isinstance(points[0],list):
-          if self.weighted:
-            (minX,minY,z) = points[0]
-            maxX = minX
-            maxY = minY
-            for x, y, z in points:
-              minX = min(x, minX)
-              minY = min(y, minY)
-              maxX = max(x, maxX)
-              maxY = max(y, maxY)
-          else:
-            (minX,minY) = points[0]
-            maxX = minX
-            maxY = minY
-            for x, y in points:
-              minX = min(x, minX)
-              minY = min(y, minY)
-              maxX = max(x, maxX)
-              maxY = max(y, maxY)
-        else:
-          minX = points[0]
-          minY = points[1]
-          maxX = minX
-          maxY = minY
-          inc = 2
-          if self.weighted:
-            inc = 3
-          for i in range(0,len(points),inc):
-              minX = min(points[i], minX)
-              minY = min(points[i+1], minY)
-              maxX = max(points[i], maxX)
-              maxY = max(points[i+1], maxY)
+        minX = self.points[0]
+        minY = self.points[1]
+        maxX = minX
+        maxY = minY
+        inc = 2
+        if self.weighted:
+          inc = 3
+        for i in range(0,len(self.points),inc):
+            minX = min(self.points[i], minX)
+            minY = min(self.points[i+1], minY)
+            maxX = max(self.points[i], maxX)
+            maxY = max(self.points[i+1], maxY)
 
         return ((minX, minY), (maxX, maxY))
 
@@ -219,7 +200,7 @@ class Heatmap:
         if self.override:
             ((east, south), (west, north)) = self.area
         else:
-            ((east, south), (west, north)) = self._ranges(self.points)
+            ((east, south), (west, north)) = self._ranges()
 
         bytes = self.KML % (tilePath, north, south, east, west)
         file(kmlFile, "w").write(bytes)
