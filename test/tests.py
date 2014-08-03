@@ -141,16 +141,16 @@ class TestHeatmap(unittest.TestCase):
         self.heatmap.saveKML("09-400-EPSG4087.kml")
 
     def test_heatmap_proj(self):
-        pts = [(x*2,x) for x in range(-89,89)]
-        img = self.heatmap.heatmap(pts)
+        pts = [(x*2,x, 1 if x==0 else 0.75) for x in range(-89,89)]
+        img = self.heatmap.heatmap(pts, size = (2048, 1024), dotsize = 50, weighted = 1)
         img.save("10-400-normal.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("10-400-normal.kml")
-        img = self.heatmap.heatmap(pts,srcepsg='EPSG:4326')
+        img = self.heatmap.heatmap(pts,srcepsg='EPSG:4326', size = (2048, 1024), dotsize = 50, weighted = 1)
         img.save("10-400-EPSG3857.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("10-400-EPSG3857.kml")
-        img = self.heatmap.heatmap(pts, srcepsg='EPSG:4326',dstepsg='EPSG:4087')
+        img = self.heatmap.heatmap(pts, srcepsg='EPSG:4326',dstepsg='EPSG:4087', size = (2048, 1024), dotsize = 50, weighted = 1)
         img.save("10-400-EPSG4087.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("10-400-EPSG4087.kml")
