@@ -167,22 +167,38 @@ class Heatmap:
     def _ranges(self, points):
         """ walks the list of points and finds the
         max/min x & y values in the set """
-        minX = points[0][0]
-        minY = points[0][1]
-        maxX = minX
-        maxY = minY
-        if not self.weighted:
-          for x, y in points:
+        if isinstance(points[0],tuple) or isinstance(points[0],list):
+          if self.weighted:
+            (minX,minY,z) = points[0]
+            maxX = minX
+            maxY = minY
+            for x, y, z in points:
+              minX = min(x, minX)
+              minY = min(y, minY)
+              maxX = max(x, maxX)
+              maxY = max(y, maxY)
+          else:
+            (minX,minY) = points[0]
+            maxX = minX
+            maxY = minY
+            for x, y in points:
               minX = min(x, minX)
               minY = min(y, minY)
               maxX = max(x, maxX)
               maxY = max(y, maxY)
         else:
-          for x, y, z in points:
-              minX = min(x, minX)
-              minY = min(y, minY)
-              maxX = max(x, maxX)
-              maxY = max(y, maxY)
+          minX = points[0]
+          minY = points[1]
+          maxX = minX
+          maxY = minY
+          inc = 2
+          if self.weighted:
+            inc = 3
+          for i in range(0,len(points),inc):
+              minX = min(points[i], minX)
+              minY = min(points[i+1], minY)
+              maxX = max(points[i], maxX)
+              maxY = max(points[i+1], maxY)
 
         return ((minX, minY), (maxX, maxY))
 

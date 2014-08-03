@@ -70,18 +70,28 @@ class TestHeatmap(unittest.TestCase):
         img = self.heatmap.heatmap(map( lambda (x,y) : (x,y,1), pts), weighted=1)
         img.save("07-400-100percent.png")
         self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("07-400-100percent.kml")
         img = self.heatmap.heatmap(map( lambda (x,y) : (x,y,.75), pts), weighted=1)
         img.save("07-400-75percent.png")
         self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("07-400-75percent.kml")
 
-    def test_heatmap_random_flat(self):
+    def test_heatmap_random_datatypes(self):
+        pts = [random.random() for x in range(800)]
+        img = self.heatmap.heatmap(pts)
+        img.save("08-400-array.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-array.kml")
         pts = [(random.random(),random.random()) for x in range(400)]
         img = self.heatmap.heatmap(pts)
-        img.save("08-400-normal.png")
+        img.save("08-400-arrayoftuples.png")
         self.assertTrue(isinstance(img, Image.Image))
-        img = self.heatmap.heatmap(sum(pts,()))
-        img.save("08-400-flat.png")
+        self.heatmap.saveKML("08-400-arrayoftuples.kml")
+        pts = [[random.random(),random.random()] for x in range(400)]
+        img = self.heatmap.heatmap(pts)
+        img.save("08-400-arrayofarrays.png")
         self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-arrayofarrays.kml")
 
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):
