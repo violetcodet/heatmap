@@ -65,6 +65,7 @@ class TestHeatmap(unittest.TestCase):
         # this should also generate a warning on stderr of overly dense
         img = self.heatmap.heatmap(pts)
         img.save("07-400-normal.png")
+        self.heatmap.saveKML("07-400-normal.kml")
         self.assertTrue(isinstance(img, Image.Image))
         img = self.heatmap.heatmap(map( lambda (x,y) : (x,y,1), pts), weighted=1)
         img.save("07-400-100percent.png")

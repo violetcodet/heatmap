@@ -96,6 +96,7 @@ class Heatmap:
         self.opacity = opacity
         self.size = size
         self.points = points
+        self.weighted = weighted
 
         if area is not None:
             self.area = area
@@ -109,7 +110,7 @@ class Heatmap:
                 scheme, self.schemes())
             raise Exception(tmp)
 
-        arrPoints = self._convertPoints(points,weighted)
+        arrPoints = self._convertPoints(points)
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
 
@@ -130,12 +131,12 @@ class Heatmap:
     def _allocOutputBuffer(self):
         return (ctypes.c_ubyte * (self.size[0] * self.size[1] * 4))()
 
-    def _convertPoints(self, pts, weighted):
+    def _convertPoints(self, pts):
         """ flatten the list of tuples, convert into ctypes array """
 
         flat = []
         if isinstance(pts[0],tuple) or isinstance(pts[0],list):
-          if (weighted):
+          if (self.weighted):
             for i, j, k in pts:
               flat.append(i)
               flat.append(j)
@@ -170,11 +171,18 @@ class Heatmap:
         minY = points[0][1]
         maxX = minX
         maxY = minY
-        for x, y in points:
-            minX = min(x, minX)
-            minY = min(y, minY)
-            maxX = max(x, maxX)
-            maxY = max(y, maxY)
+        if not self.weighted:
+          for x, y in points:
+              minX = min(x, minX)
+              minY = min(y, minY)
+              maxX = max(x, maxX)
+              maxY = max(y, maxY)
+        else:
+          for x, y, z in points:
+              minX = min(x, minX)
+              minY = min(y, minY)
+              maxX = max(x, maxX)
+              maxY = max(y, maxY)
 
         return ((minX, minY), (maxX, maxY))
 
