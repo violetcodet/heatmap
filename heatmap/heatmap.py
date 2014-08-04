@@ -3,17 +3,15 @@ import sys
 import ctypes
 import platform
 import math
+import colorschemes
+from PIL import Image
+
 use_pyproj = False
 try:
   import pyproj
   use_pyproj = True
 except:
   pass
-  
-
-import colorschemes
-
-from PIL import Image
 
 class Heatmap:
     """
@@ -52,8 +50,6 @@ class Heatmap:
 </kml>"""
 
     def __init__(self, libpath=None):
-        self.minXY = ()
-        self.maxXY = ()
         self.img = None
         # if you're reading this, it's probably because this
         # hacktastic garbage failed.  sorry.  I deserve a jab or two via @jjguy.
@@ -109,8 +105,8 @@ class Heatmap:
         self.srcepsg = srcepsg
         self.dstepsg = dstepsg
 
-        if srcepsg and not use_pyproj:
-          sys.stderr.write('WARNING: pyproj not available, Source and Destination EPSG will be ignored\n')
+        if self.srcepsg and not use_pyproj:
+          raise Exception('srcepsg entered but pyproj is not available')
 
         if area is not None:
             self.area = area
@@ -119,8 +115,9 @@ class Heatmap:
             self.area = ((0, 0), (0, 0))
             self.override = 0
 
+        #convert area for heatmap.c if required
         ((east, south), (west, north)) = self.area
-        if use_pyproj and self.srcepsg is not None and self.srcepsg is not self.dstepsg:
+        if use_pyproj and self.srcepsg is not None and self.srcepsg != self.dstepsg:
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init=self.dstepsg)
           (east,south) = pyproj.transform(source,dest,east,south)
@@ -131,15 +128,14 @@ class Heatmap:
                 scheme, self.schemes())
             raise Exception(tmp)
 
-        arrPoints = self._convertPoints(weighted)
+        arrPoints = self._convertPoints()
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
 
         ret = self._heatmap.tx(
             arrPoints, len(arrPoints), size[0], size[1], dotsize,
             arrScheme, arrFinalImage, opacity, self.override,
-            ctypes.c_float(east), ctypes.c_float(
-                south),
+            ctypes.c_float(east), ctypes.c_float(south),
             ctypes.c_float(west), ctypes.c_float(north), weighted)
 
         if not ret:
@@ -152,53 +148,37 @@ class Heatmap:
     def _allocOutputBuffer(self):
         return (ctypes.c_ubyte * (self.size[0] * self.size[1] * 4))()
 
-    def _convertPoints(self, weighted):
+    def _convertPoints(self):
         """ flatten the list of tuples, convert into ctypes array """
 
-        flat = []
-        if isinstance(self.points[0],tuple) or isinstance(self.points[0],list):
-          if (self.weighted):
-            for i, j, k in self.points:
-              flat.append(i)
-              flat.append(j)
-              flat.append(k)
-          else:
-            for i, j in self.points:
-              flat.append(i)
-              flat.append(j)
-          self.points = flat
-        else:
-          flat = self.points
+        if isinstance(self.points,tuple):
+          self.points = list(self.points)
+        if isinstance(self.points[0],tuple):
+          self.points = list(sum(self.points,()))
+        elif isinstance(self.points[0],list):
+          self.points = sum(self.points,[])
 
-        #convert if required, need to copy as may use points later for _ranges.
-        #better to just calc all the time?
-        if use_pyproj and self.srcepsg is not None and self.dstepsg is not None and self.srcepsg is not self.dstepsg:
-          converted =list(flat)
+        #convert if required, need to copy as may use points later for _range.
+        if use_pyproj and self.srcepsg is not None and self.srcepsg != self.dstepsg:
+          converted =list(self.points)
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init=self.dstepsg) 
-          inc = 2
-          if weighted:
-            inc = 3
-          for i in range(0, len(flat), inc):
-            (x,y) = pyproj.transform(source,dest,flat[i],flat[i+1])
+          #nicer way? map/lambda will retun 2/3 tuple so need to flatten again
+          inc = 3 if self.weighted else 2
+          for i in range(0, len(self.points), inc):
+            (x,y) = pyproj.transform(source,dest,self.points[i],self.points[i+1])
             converted[i] = x
             converted[i+1] = y
           arr_pts = (ctypes.c_float * (len(converted))) (*converted)
         else:
-          arr_pts = (ctypes.c_float * (len(flat))) (*flat)
+          arr_pts = (ctypes.c_float * (len(self.points))) (*self.points)
         return arr_pts
 
     def _convertScheme(self, scheme):
         """ flatten the list of RGB tuples, convert into ctypes array """
 
-        #TODO is there a better way to do this??
-        flat = []
-        for r, g, b in colorschemes.schemes[scheme]:
-            flat.append(r)
-            flat.append(g)
-            flat.append(b)
-        arr_cs = (
-            ctypes.c_int * (len(colorschemes.schemes[scheme]) * 3))(*flat)
+        flat = list(sum(colorschemes.schemes[scheme],()))
+        arr_cs = (ctypes.c_int * (len(flat)))(*flat)
         return arr_cs
 
     def _ranges(self):
@@ -208,9 +188,7 @@ class Heatmap:
         minY = self.points[1]
         maxX = minX
         maxY = minY
-        inc = 2
-        if self.weighted:
-          inc = 3
+        inc = 3 if self.weighted else 2
         for i in range(0,len(self.points),inc):
             minX = min(self.points[i], minX)
             minY = min(self.points[i+1], minY)
@@ -237,7 +215,9 @@ class Heatmap:
             ((west, south), (east, north)) = self.area
         else:
             ((west, south), (east, north)) = self._ranges()
-        if use_pyproj and self.srcepsg is not None and self.srcepsg is not 'EPSG:4326':
+
+        #convert overlay BBOX if required
+        if use_pyproj and self.srcepsg is not None and self.srcepsg != 'EPSG:4326':
           source = pyproj.Proj(init=self.srcepsg)
           dest = pyproj.Proj(init='EPSG:4326')
           (east,south) = pyproj.transform(source,dest,east,south)
