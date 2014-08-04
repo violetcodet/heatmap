@@ -1,22 +1,22 @@
 import os
 import glob
 
+#here use a flag so don't automatically use setuptools if available, hard to test otherwise
 with_setuptools = False
-if 'USE_SETUPTOOLS' in os.environ or 'pip' in __file__:
+if 'USE_SETUPTOOLS' in os.environ or 'pip' in __file__ or 'easy_install' in __file__:
   try:
     from setuptools.command.install import install
     from setuptools import setup
     from setuptools import Extension
     from setuptools.command.build_ext import build_ext
     with_setuptools = True
-  except:
-    with_setuptools = False
-
-if with_setuptools is False:
- from distutils.command.install import install
- from distutils.core import setup
- from distutils.core import Extension
- from distutils.command.build_ext import build_ext
+  except ImportError:
+    pass
+if not with_setuptools:
+    from distutils.command.install import install
+    from distutils.core import setup
+    from distutils.core import Extension
+    from distutils.command.build_ext import build_ext
 
 # sorry for this, welcome feedback on the "right" way.
 # shipping pre-compiled bainries on windows, have
@@ -28,7 +28,6 @@ class mybuild(build_ext):
             print "On Windows, skipping build_ext."
             return
         build_ext.run(self)
-
 
 class post_install(install):
     def run(self):
@@ -45,21 +44,30 @@ class post_install(install):
 
 cHeatmap = Extension('cHeatmap', sources=['heatmap/heatmap.c', ])
 
-setup(name='heatmap',
-      version="2.2.1",
-      description='Module to create heatmaps',
-      author='Jeffrey J. Guy',
-      author_email='jjg@case.edu',
-      url='http://jjguy.com/heatmap/',
-      license='MIT License',
-      packages=['heatmap', ],
-      py_modules=['heatmap.colorschemes', ],
-      ext_modules=[cHeatmap, ],
-      cmdclass={'install': post_install,
-                'build_ext': mybuild},
-      requires=["Pillow"],
-      install_requires = ['Pillow'],
-      extras_require = {'proj' : 'pyproj'},
-      test_suite="test",
-      tests_require=['pyproj'],
-      )
+#separate calls to remove errors
+basekw = {
+      'name' : 'heatmap',
+      'version' : "2.2.1",
+      'description' : 'Module to create heatmaps',
+      'author' : 'Jeffrey J. Guy',
+      'author_email' : 'jjg@case.edu',
+      'url' : 'http://jjguy.com/heatmap/',
+      'license' : 'MIT License',
+      'packages' : ['heatmap', ],
+      'py_modules' : ['heatmap.colorschemes', ],
+      'ext_modules' : [cHeatmap, ],
+      'cmdclass' : {'install': post_install,
+                'build_ext': mybuild}
+      }
+setuptoolskw = {      
+      'install_requires' : ['Pillow'],
+      'extras_require' : {'proj' : 'pyproj'},
+      'test_suite' : "test",
+      'tests_require' : ['pyproj']
+      }
+distutilskw = {
+      'requires' : ["Pillow"]
+      }
+
+basekw.update(setuptoolskw) if with_setuptools else basekw.update(distutilskw)
+setup(**basekw)
