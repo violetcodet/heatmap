@@ -61,6 +61,7 @@ class TestHeatmap(unittest.TestCase):
         self.assertRaises(Exception, self.heatmap.heatmap, ([],))
 
     def test_heatmap_weighted(self):
+        #normal should be the same as 100%, 75% should have same pattern but smaller
         pts = [(random.uniform(30,40), random.uniform(-30,-40)) for x in range(400)]
         # this should also generate a warning on stderr of overly dense
         img = self.heatmap.heatmap(pts)
@@ -77,6 +78,7 @@ class TestHeatmap(unittest.TestCase):
         self.heatmap.saveKML("07-400-75percent.kml")
 
     def test_heatmap_random_datatypes(self):
+        #all of the below should turn out to be the same, if not there are issues
         pts = [[random.random(),random.random()] for x in range(400)]
         img = self.heatmap.heatmap(sum(pts,[]))
         img.save("08-400-array.png")
@@ -126,6 +128,7 @@ class TestHeatmap(unittest.TestCase):
       self.heatmap.saveKML("11-400-areaTestNormal.kml")
 
     def test_heatmap_random_proj(self):
+        #4087 should be the same as 'normal'
         pts = [(random.uniform(-180,180),random.uniform(-90,90)) for x in range(400)]
         img = self.heatmap.heatmap(pts)
         img.save("09-400-normal.png")
@@ -141,7 +144,9 @@ class TestHeatmap(unittest.TestCase):
         self.heatmap.saveKML("09-400-EPSG4087.kml")
 
     def test_heatmap_proj(self):
-        pts = [(x*2,x, 1 if x==0 else 0.75) for x in range(-89,89)]
+        #normal should be the same as 4087
+        #3857 and 4087 should roughly meet at 0,0 as symetrical around the equator
+        pts = [(x*2,x, 1 if x==0 else 0.75) for x in range(-89,90)]
         img = self.heatmap.heatmap(pts, size = (2048, 1024), dotsize = 50, weighted = 1)
         img.save("10-400-normal.png")
         self.assertTrue(isinstance(img, Image.Image))
