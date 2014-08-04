@@ -79,19 +79,47 @@ class TestHeatmap(unittest.TestCase):
 
     def test_heatmap_random_datatypes(self):
         #all of the below should turn out to be the same, if not there are issues
-        pts = [[random.random(),random.random()] for x in range(400)]
-        img = self.heatmap.heatmap(sum(pts,[]))
-        img.save("08-400-array.png")
+        pts = tuple((random.random(),random.random(),1) for x in range(400))
+        img = self.heatmap.heatmap(map(lambda (x,y,z) : (x,y), pts))
+        img.save("08-400-tupleoftuples.png")
         self.assertTrue(isinstance(img, Image.Image))
-        self.heatmap.saveKML("08-400-array.kml")
-        img = self.heatmap.heatmap(map(lambda (x,y) : (x,y), pts))
+        self.heatmap.saveKML("08-400-tupleoftuples.kml")
+        img = self.heatmap.heatmap(pts, weighted=1)
+        img.save("08-400-tupleoftuplesweighted.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-tupleoftuplesweighted.kml")
+        img = self.heatmap.heatmap(list(map(lambda (x,y,z) : (x,y), pts)))
         img.save("08-400-arrayoftuples.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("08-400-arrayoftuples.kml")
-        img = self.heatmap.heatmap(pts)
+        img = self.heatmap.heatmap(list(pts), weighted=1)
+        img.save("08-400-arrayoftuplesweighted.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-arrayoftuplesweighted.kml")
+        img = self.heatmap.heatmap(map(lambda (x,y,z) : [x,y], pts))
+        img.save("08-400-tupleofarrays.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-tupleofarrays.kml")
+        img = self.heatmap.heatmap(map(lambda (x,y,z) : [x,y,z], pts), weighted=1)
+        img.save("08-400-tupleofarraysweighted.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-tupleofarrayweighted.kml")
+        img = self.heatmap.heatmap(list(map(lambda (x,y,z) : [x,y], pts)))
         img.save("08-400-arrayofarrays.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("08-400-arrayofarrays.kml")
+        img = self.heatmap.heatmap(list(map(lambda (x,y,z) : [x,y,z], pts)), weighted=1)
+        img.save("08-400-arrayofarraysweighted.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-arrayofarraysweighted.kml")
+        img = self.heatmap.heatmap(sum(map(lambda (x,y,z) : [x,y], pts),[]))
+        img.save("08-400-flat.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-flat.kml")
+        img = self.heatmap.heatmap(sum(map(lambda (x,y,z) : [x,y,z], pts),[]), weighted=1)
+        img.save("08-400-flatweighted.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("08-400-flatweighted.kml")
 
     def test_heatmap_area(self):
       MAX_SIZE=8192
@@ -143,7 +171,7 @@ class TestHeatmap(unittest.TestCase):
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("09-400-EPSG4087.kml")
 
-    def test_heatmap_proj(self):
+    def test_heatmap_weighted_proj(self):
         #normal should be the same as 4087
         #3857 and 4087 should roughly meet at 0,0 as symetrical around the equator
         pts = [(x*2,x, 1 if x==0 else 0.75) for x in range(-89,90)]
