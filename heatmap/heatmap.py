@@ -5,6 +5,7 @@ import platform
 import math
 from . import colorschemes
 from PIL import Image
+import glob
 
 use_pyproj = False
 try:
@@ -61,7 +62,7 @@ class Heatmap:
             # establish the right library name, based on platform and arch.  Windows
             # are pre-compiled binaries; linux machines are compiled during setup.
             self._heatmap = None
-            libname = "cHeatmap.so"
+            libname = "cHeatmap"
             if "cygwin" in platform.system().lower():
                 libname = "cHeatmap.dll"
             if "windows" in platform.system().lower():
@@ -71,9 +72,17 @@ class Heatmap:
             # now rip through everything in sys.path to find 'em.  Should be in site-packages
             # or local dir
             for d in sys.path:
-                if os.path.isfile(os.path.join(d, libname)):
+                if os.path.isfile(os.path.join(d, libname+'.so')):
                     self._heatmap = ctypes.cdll.LoadLibrary(
-                        os.path.join(d, libname))
+                        os.path.join(d, libname+'.so'))
+            # check for cpython-*.so prefix for object files which seems to be the ones
+            # copied on install in the travis python3 environment (even with the same version of setuptools)
+            # may investigate further and do the test based on execution environment
+            if not self._heatmap:
+              for d in sys.path:
+                file = glob.glob(os.path.join(d,libname+'.cpython-*.so'))
+                if file:
+                    self._heatmap = ctypes.cdll.LoadLibrary(file[0])
 
         if not self._heatmap:
             raise Exception("Heatmap shared library not found in PYTHONPATH.")
