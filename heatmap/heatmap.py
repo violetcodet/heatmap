@@ -3,7 +3,7 @@ import sys
 import ctypes
 import platform
 import math
-import colorschemes
+from . import colorschemes
 from PIL import Image
 
 use_pyproj = False
@@ -224,7 +224,9 @@ class Heatmap:
           (west,north) = pyproj.transform(source,dest,west,north)
 
         bytes = self.KML % (tilePath, north, south, east, west)
-        file(kmlFile, "w").write(bytes)
+        fh = open(kmlFile, "w")
+        fh.write(bytes)
+        fh.close()
 
     def schemes(self):
         """
