@@ -110,14 +110,15 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
     int ndx = 0;
     struct point pt = {0};  
 
+    int inc = 2;
+    if (weighted) inc = 3;
+
     // initialize image data to white
     for(i = 0; i < (int)width*height; i++) 
     {
         pixels[i] = 0xff;
     }
 
-    int inc = 2;
-    if (weighted) inc = 3;
 
     for(i = 0; i < cPoints; i=i+inc)
     {
@@ -210,6 +211,7 @@ unsigned char *tx(float *points,
                   float minX, float minY, float maxX, float maxY, int weighted)
 {
     unsigned char *pixels_bw = NULL;
+    struct info inf = {0};
 
     //basic sanity checks to keep from segfaulting
     if (NULL == points || NULL == scheme || NULL == pix_color ||
@@ -219,7 +221,6 @@ unsigned char *tx(float *points,
         return NULL;
     }
     
-    struct info inf = {0};
     
     inf.dotsize = dotsize;
     inf.width = w;
