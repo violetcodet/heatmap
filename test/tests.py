@@ -57,9 +57,6 @@ class TestHeatmap(unittest.TestCase):
         self.heatmap.saveKML("06-wash-dc.kml")
         self.assertTrue(isinstance(img, Image.Image))
 
-    def test_invalid_heatmap(self):
-        self.assertRaises(Exception, self.heatmap.heatmap, ([],))
-
     def test_heatmap_weighted(self):
         #normal should be the same as 100%, 75% should have same pattern but smaller
         pts = [(random.uniform(30,40), random.uniform(-30,-40)) for x in range(400)]
@@ -170,6 +167,10 @@ class TestHeatmap(unittest.TestCase):
         img.save("09-400-EPSG4087.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("09-400-EPSG4087.kml")
+        img = self.heatmap.heatmap(pts, srcepsg='EPSG:3857',dstepsg='EPSG:4087')
+        img.save("09-400-EPSG4087.png")
+        self.assertTrue(isinstance(img, Image.Image))
+        self.heatmap.saveKML("09-400-EPSG4087.kml")
 
     def test_heatmap_weighted_proj(self):
         #normal should be the same as 4087
@@ -187,6 +188,15 @@ class TestHeatmap(unittest.TestCase):
         img.save("10-400-EPSG4087.png")
         self.assertTrue(isinstance(img, Image.Image))
         self.heatmap.saveKML("10-400-EPSG4087.kml")
+
+    def test_heatmap_exceptions(self):
+      #test invalid (empty) heatmap
+      self.assertRaisesRegex(Exception, 'Unexpected error', self.heatmap.heatmap, ([],))
+      #test invalid scheme
+      self.assertRaisesRegex(Exception, 'Unknown color scheme', self.heatmap.heatmap, ([],),scheme='invalid')
+      #test saveKML before create heatmap
+      self.assertRaisesRegex(Exception, 'Must first run heatmap', self.heatmap.saveKML,"test.kml")
+      
 
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):
