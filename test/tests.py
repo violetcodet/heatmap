@@ -190,13 +190,32 @@ class TestHeatmap(unittest.TestCase):
         self.heatmap.saveKML("10-400-EPSG4087.kml")
 
     def test_heatmap_exceptions(self):
-      #test invalid (empty) heatmap
-      self.assertRaisesRegex(Exception, 'Unexpected error', self.heatmap.heatmap, ([],))
+ 
+      #test invalid (empty) heatmap, should print error to stdout
+      emptyHeatmapArgs = [Exception, 'Unexpected error', self.heatmap.heatmap, ([],)]
+      emptyHeatmapKwargs = {}
       #test invalid scheme
-      self.assertRaisesRegex(Exception, 'Unknown color scheme', self.heatmap.heatmap, ([],),scheme='invalid')
+      invalidColorSchemeArgs = [Exception, 'Unknown color scheme', self.heatmap.heatmap, ([],)]
+      invalidColourSchemeKwargs = {'scheme' : 'invalid'}
       #test saveKML before create heatmap
-      self.assertRaisesRegex(Exception, 'Must first run heatmap', self.heatmap.saveKML,"test.kml")
+      saveKMLArgs = [Exception, 'Must first run heatmap', self.heatmap.saveKML,"test.kml"]
+      saveKMLKwargs = {}
+
+      #better way? no __verison__ in unittest
+      try:
+        function = self.assertRaisesRegex
+      except:
+        try: 
+          function = self.assertRaisesRegexp
+        except:
+          function = self.assertRaises
+          emptyHeatmapArgs.pop(1)
+          invalidColorSchemeArgs.pop(1)
+          saveKMLArgs.pop(1)
       
+      function(*emptyHeatmapArgs, **emptyHeatmapKwargs)
+      function(*invalidColorSchemeArgs, **invalidColourSchemeKwargs)
+      function(*saveKMLArgs, **saveKMLKwargs)
 
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):
