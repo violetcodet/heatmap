@@ -52,12 +52,22 @@ basekw = {
       'author' : 'Jeffrey J. Guy',
       'author_email' : 'jjg@case.edu',
       'url' : 'http://jjguy.com/heatmap/',
-      'license' : 'MIT License',
       'packages' : ['heatmap', ],
       'py_modules' : ['heatmap.colorschemes', ],
       'ext_modules' : [cHeatmap, ],
       'cmdclass' : {'install': post_install,
-                'build_ext': mybuild}
+                'build_ext': mybuild},
+      'classifiers' : [
+                       'Programming Language :: Python', 
+                       'Programming Language :: Python :: 2.6',
+                       'Programming Language :: Python :: 2.7',
+                       'Programming Language :: Python :: 3',
+                       'Operating System :: OS Independent',
+                       'License :: OSI Approved :: MIT License',
+                       'Topic :: Software Development :: Libraries :: Python Modules',
+                       'Topic :: Scientific/Engineering :: Visualization',
+                       'Topic :: Scientific/Engineering :: GIS'
+                      ]
       }
 setuptoolskw = {      
       'install_requires' : ['Pillow'],
