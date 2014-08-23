@@ -3,9 +3,11 @@
 #include <math.h>
 #include <string.h>
 
-float constant = 50.0;
-float multiplier = 200.0;
+//will make these configurable
+float constant;
+float multiplier;
 
+//could return this struct
 struct info
 {
 	float minX;
@@ -17,6 +19,9 @@ struct info
 	int height;
         int cPixels;
 	int dotsize;
+
+        float maxF;
+        float minF;
 };
 
 struct point {
@@ -93,19 +98,53 @@ struct point translate(struct info *inf, struct point pt)
     return pt;
 }
 
-unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int weighted)
+unsigned char* normalise(struct info *inf, float *floatArray, int cFloats){
+
+    //create pixels array, no need to clear as will run over full array and set everything
+    unsigned char* pixels = (unsigned char *)malloc(cFloats*sizeof(char));
+    int i = 0;
+
+    //find the max and min values in the array     
+    float minF = floatArray[0];
+    float maxF = floatArray[0];
+    float f;
+
+    for (i = 1; i < cFloats; i++)
+    {
+        f = floatArray[i];
+
+        if (f > maxF) maxF = f;
+        if (f < minF) minF = f;
+    }
+    //save for later so we can query for scale
+    inf->maxF = maxF;
+    inf->minF = minF;
+
+    //normalise, could add functions before such as log etc
+    //keeping with initial colorize and schemes where 0 is the max value
+    for (i = 0; i < cFloats; i++){
+      pixels[i] = 255 - (floatArray[i] - minF)/(maxF-minF)*255;
+    }
+
+    return pixels;
+
+}
+
+float* calcDensity(struct info *inf, float *points, int cPoints, int weighted)
 {
     int width = inf->width;
     int height = inf->height;
     int cPixels = inf->cPixels;
     int dotsize = inf->dotsize;
     
-    unsigned char* pixels = (unsigned char *)malloc(cPixels*sizeof(char)); 
+    //create the float array, maloc as initialise to floats later
+    float* pixels = (float *)malloc(cPixels*sizeof(float)); 
 
     float midpt = dotsize / 2.f;
     float radius = sqrt(midpt*midpt + midpt*midpt) / 2.f;
-    float dist = 0.0;
-    int pixVal = 0;
+    float dist = 0.f;
+    float pixVal = 0.f;
+
     int j = 0;
     int k = 0;
     int i = 0;
@@ -115,12 +154,11 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
     int inc = 2;
     if (weighted) inc = 3;
 
-    // initialize image data to white
+    // initialize image data to black
     for(i = 0; i < cPixels; i++) 
     {
-        pixels[i] = 0xff;
+        pixels[i] = 0.f;
     }
-
 
     for(i = 0; i < cPoints; i=i+inc)
     {
@@ -137,25 +175,35 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
                 dist = sqrt( (j-pt.x)*(j-pt.x) + (k-pt.y)*(k-pt.y) );
                 
                 if(dist>radius) continue; // stop point contributing to pixels outside its radius
+           
+                ndx = k*width + j;
+                if(ndx >= (int)width*height) continue;   // ndx can be greater than array bounds
 
                 ndx = k*width + j;
                 if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
 
                 if(weighted)
                 {
-                  pixVal = (int)((multiplier*(dist/radius)+constant)/points[i+2]);
+                  pixVal = points[i+2];
                 }
                 else
                 {
-                  pixVal = (int)(multiplier*(dist/radius)+constant);
+                  pixVal = 1;
                 }
-                if (pixVal > 255) pixVal = 255;
+                //if constant == multiplier == 0 or dist == 0 want pixVal == pixVal
+                //could have another function here such a quadratic, exponential decay etc.
+                pixVal = pixVal-pixVal*(multiplier*dist+constant);
+                //don't want to go into the negatives
+                if(pixVal < 0){
+                  pixVal = 0;
+                }
 
                 #ifdef DEBUG
                 printf("pt.x: %.2f pt.y: %.2f j: %d k: %d ndx: %d\n", pt.x, pt.y, j, k, ndx);
                 #endif 
 
-                pixels[ndx] = (pixels[ndx] * pixVal) / 255;
+                //simple addition for combination function
+                pixels[ndx] = pixels[ndx] + pixVal;
             } // for k
         } //for j
     } // for i
@@ -178,6 +226,7 @@ unsigned char *colorize(struct info *inf, unsigned char* pixels_bw, int *scheme,
         pix = pixels_bw[i];
 
         if (pix < 0x10) highCount++;
+        //make tunable
         if (pix <= 252) 
             alpha = opacity; 
         else 
@@ -212,6 +261,7 @@ unsigned char *tx(float *points,
                   float minX, float minY, float maxX, float maxY, int weighted)
 {
     unsigned char *pixels_bw = NULL;
+    float *floats_bw = NULL;
     struct info inf = {0};
 
     //basic sanity checks to keep from segfaulting
@@ -227,6 +277,12 @@ unsigned char *tx(float *points,
     inf.width = w;
     inf.height = h;
     inf.cPixels = w*h;
+
+    //dynamically choose based on radius
+    //here will have half the intenisty half way to the edge of the dot
+    //at the end of the dot will have 1/4 the intensity
+    multiplier = 8.f/dotsize;
+    constant = 0.f;
  
     // get min/max x/y values from point list
     if (boundsOverride == 1)
@@ -244,12 +300,17 @@ unsigned char *tx(float *points,
     #endif
 
     //iterate through points, place a dot at each center point
-    //and set pix value from 0 - 255 using multiply method for radius [dotsize].
-    pixels_bw = calcDensity(&inf, points, cPoints, weighted);
-
+    //and set pix value using multiply method for radius [dotsize] and 
+    //addition with any prevoius values
+    floats_bw = calcDensity(&inf, points, cPoints, weighted);
+    //normalise the float numbers to char values between 0 and 255
+    pixels_bw = normalise(&inf, floats_bw, w*h);
+    //no longer need the floats
+    free(floats_bw);
+    floats_bw = NULL;
     //using provided color scheme and opacity, update pixel value to RGBA values
     pix_color = colorize(&inf, pixels_bw, scheme, pix_color, opacity);
-
+    //no longer need the 0-255 pixels
     free(pixels_bw);
     pixels_bw = NULL;
 

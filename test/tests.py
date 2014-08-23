@@ -55,13 +55,15 @@ class TestHeatmap(unittest.TestCase):
         self.heatmapImage("06-wash-dc", pts)
 
     def test_heatmap_weighted(self):
-        #normal should be the same as 100%, 75% should have same pattern but smaller
+        #normal should be the same as 100% as well as possibly 75% (possibility for rounding errors) now scaling is included
         pts = [(random.uniform(30,40), random.uniform(-30,-40)) for x in range(400)]
         norm = self.heatmapImage("07-400-normal", pts, saveKML=True)
         weight = self.heatmapImage("07-400-100percent", list(map( lambda x_y : (x_y[0],x_y[1],1), pts)), kwargs={ "weighted" : 1 }, saveKML=True)
         self.assertEqual(norm,weight)
         weight2 = self.heatmapImage("07-400-75percent", list(map( lambda x_y : (x_y[0],x_y[1],.75), pts)), kwargs={ "weighted" : 1 }, saveKML=True)
-        self.assertNotEqual(norm,weight2)
+        #weight 3 should be quite different
+        weight3 = self.heatmapImage("07-400-random", list(map( lambda x_y : (x_y[0],x_y[1],random.uniform(0,1)), pts)), kwargs={ "weighted" : 1 }, saveKML=True)
+        self.assertNotEqual(norm,weight3)
 
     def test_heatmap_random_datatypes(self):
         #all of the below should turn out to be the same, if not there are issues
