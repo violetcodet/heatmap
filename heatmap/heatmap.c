@@ -98,7 +98,7 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
     int height = inf->height;
     int dotsize = inf->dotsize;
     
-    unsigned char* pixels = (unsigned char *)calloc(width*height, sizeof(char)); 
+    unsigned char* pixels = (unsigned char *)malloc(width*height*sizeof(char)); 
 
     float midpt = dotsize / 2.f;
     double radius = sqrt(midpt*midpt + midpt*midpt) / 2.f;
