@@ -10,7 +10,6 @@ except ImportError:
 import heatmap
 from heatmap import colorschemes
 
-
 class TestHeatmap(unittest.TestCase):
     """unittests for TestHeatmap"""
 
@@ -78,7 +77,6 @@ class TestHeatmap(unittest.TestCase):
         f = self.heatmapImage("08-400-flat", sum(map(lambda x_y_z : [x_y_z[0],x_y_z[1]], pts),[]), saveKML=True)
         fw = self.heatmapImage("08-400-flatweighted", sum(map(lambda x_y_z : [x_y_z[0],x_y_z[1],x_y_z[2]], pts),[]), kwargs = { "weighted" : True }, saveKML=True)
         self.assertEqual(tt,ttw)
-        self.assertEqual(tt,ttw)
         self.assertEqual(tt,at)
         self.assertEqual(tt,atw)
         self.assertEqual(tt,ta)
@@ -113,7 +111,7 @@ class TestHeatmap(unittest.TestCase):
          PPD = float((width-dotsize/2))/(east-west)
       dotDegrees = dotsize/2/PPD
       bounds = ((west-dotDegrees, south-dotDegrees),(east+dotDegrees,north+dotDegrees))
-      #these should be the same except less cutin off from manual area
+      #these should be the same except less cutting off the corners with the manual area
       self.heatmapImage("11-400-areaTest", pts, { "size" : (width, height), "dotsize" : dotsize, "area" : bounds, "weighted" : 1}, saveKML = True)
       self.heatmapImage("11-400-areaTestNormal", pts , kwargs = { "size" : (width, height), "dotsize" : dotsize, "weighted" : 1}, saveKML = True)
 
@@ -121,7 +119,7 @@ class TestHeatmap(unittest.TestCase):
         pts = [(random.uniform(-180,180),random.uniform(-90,90)) for x in range(400)]
         norm = self.heatmapImage("09-400-normal", pts, saveKML = True)
         #4087 should be the same as 'normal' as no conversion required, kml boundary should be different (not tested) though as not converted to 4326
-        epsg4087 = self.heatmapImage("90-400-EPSG4087", pts, kwargs = { "srcepsg" : "EPSG:4087", "dstepsg" : "EPSG:4087"}, saveKML = True)
+        epsg4087 = self.heatmapImage("09-400-EPSG4087", pts, kwargs = { "srcepsg" : "EPSG:4087", "dstepsg" : "EPSG:4087"}, saveKML = True)
         self.assertEqual(norm,epsg4087)
         #4326 should be roughly the same as 'normal' but not the same as WGS84 != 4087
         epsg4326 = self.heatmapImage("09-400-EPSG4326", pts, kwargs = { "srcepsg" : "EPSG:4326", "dstepsg" : "EPSG:4087" }, saveKML = True)
