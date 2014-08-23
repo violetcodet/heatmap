@@ -91,7 +91,7 @@ class Heatmap:
             raise Exception("Heatmap shared library not found in PYTHONPATH.")
 
     def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, 
-                weighted=0, srcepsg=None, dstepsg='EPSG:3857'):
+                mult=None, const=0, weighted=0, srcepsg=None, dstepsg='EPSG:3857'):
         """
         points   -> A representation of the points (x,y values) to process.
                     Can be a flattened array/tuple or any combination of 2 dimensional 
@@ -123,6 +123,10 @@ class Heatmap:
                     Due to linear interpolation in heatmap.c it only makes sense to use linear 
                     output projections. If outputting to KML for google earth client overlay use 
                     EPSG:4087 (World Equidistant Cylindrical).
+        mult     -> multiplier for the reduction in intensity due to distance from the centre of the dot
+                    default is 8/dotsize which means will reduce by half halfway from the centre and by 1/4 at the edge
+        const    -> constant for the reduction in intensity due to distance from the centre of the dot
+                    default is 0 which means only the mult and distance impacts the reduction
         """
         self.dotsize = dotsize
         self.opacity = opacity
@@ -131,6 +135,9 @@ class Heatmap:
         self.weighted = weighted
         self.srcepsg = srcepsg
         self.dstepsg = dstepsg
+
+        if mult is None:
+          mult = 8.0/dotsize;
 
         if self.srcepsg and not use_pyproj:
           raise Exception('srcepsg entered but pyproj is not available')
@@ -163,7 +170,8 @@ class Heatmap:
             arrPoints, len(arrPoints), size[0], size[1], dotsize,
             arrScheme, arrFinalImage, opacity, self.override,
             ctypes.c_float(east), ctypes.c_float(south),
-            ctypes.c_float(west), ctypes.c_float(north), weighted)
+            ctypes.c_float(west), ctypes.c_float(north), 
+            weighted, ctypes.c_float(mult), ctypes.c_float(const))
 
         if not ret:
             raise Exception("Unexpected error during processing.")

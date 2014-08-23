@@ -258,7 +258,8 @@ unsigned char *tx(float *points,
                   unsigned char *pix_color, 
                   int opacity, 
                   int boundsOverride, 
-                  float minX, float minY, float maxX, float maxY, int weighted)
+                  float minX, float minY, float maxX, float maxY,
+                  int weighted, float mult, float cnst)
 {
     unsigned char *pixels_bw = NULL;
     float *floats_bw = NULL;
@@ -278,11 +279,8 @@ unsigned char *tx(float *points,
     inf.height = h;
     inf.cPixels = w*h;
 
-    //dynamically choose based on radius
-    //here will have half the intenisty half way to the edge of the dot
-    //at the end of the dot will have 1/4 the intensity
-    multiplier = 8.f/dotsize;
-    constant = 0.f;
+    multiplier = mult;
+    constant = cnst;
  
     // get min/max x/y values from point list
     if (boundsOverride == 1)
