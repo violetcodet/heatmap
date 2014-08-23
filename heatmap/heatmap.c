@@ -138,6 +138,9 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
                 
                 if(dist>radius) continue; // stop point contributing to pixels outside its radius
 
+                ndx = k*width + j;
+                if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
+
                 if(weighted)
                 {
                   pixVal = (int)((multiplier*(dist/radius)+constant)/points[i+2]);
@@ -147,9 +150,6 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
                   pixVal = (int)(multiplier*(dist/radius)+constant);
                 }
                 if (pixVal > 255) pixVal = 255;
-
-                ndx = k*width + j;
-                if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
 
                 #ifdef DEBUG
                 printf("pt.x: %.2f pt.y: %.2f j: %d k: %d ndx: %d\n", pt.x, pt.y, j, k, ndx);
@@ -217,7 +217,7 @@ unsigned char *tx(float *points,
     //basic sanity checks to keep from segfaulting
     if (NULL == points || NULL == scheme || NULL == pix_color ||
         w <= 0 || h <= 0 || cPoints <= 1+weighted || cPoints % (2+weighted) != 0 ||
-        opacity < 0 || dotsize <= 0)
+        opacity < 0 || opacity > 255 || dotsize <= 0)
     {
         fprintf(stderr, "Invalid parameter; aborting.\n");
         return NULL;
