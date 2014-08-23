@@ -165,16 +165,22 @@ class Heatmap:
         arrPoints = self._convertPoints()
         arrScheme = self._convertScheme(scheme)
         arrFinalImage = self._allocOutputBuffer()
+        minmax = (ctypes.c_float * 2)();
 
         ret = self._heatmap.tx(
             arrPoints, len(arrPoints), size[0], size[1], dotsize,
             arrScheme, arrFinalImage, opacity, self.override,
             ctypes.c_float(east), ctypes.c_float(south),
             ctypes.c_float(west), ctypes.c_float(north), 
-            weighted, ctypes.c_float(mult), ctypes.c_float(const))
+            weighted, ctypes.c_float(mult), ctypes.c_float(const), 
+            minmax)
 
         if not ret:
             raise Exception("Unexpected error during processing.")
+
+        #save max and min if want to use to create a legend or similar
+        self.minVal = minmax[0];
+        self.maxVal = minmax[1];
 
         self.img = Image.frombuffer('RGBA', (self.size[0], self.size[1]), 
                                     arrFinalImage, 'raw', 'RGBA', 0, 1)
@@ -216,6 +222,7 @@ class Heatmap:
         arr_cs = (ctypes.c_int * (len(flat)))(*flat)
         return arr_cs
 
+    #could be replaced by struct from heatmap.c
     def _ranges(self):
         """ walks the list of points and finds the
         max/min x & y values in the set """

@@ -3,10 +3,6 @@
 #include <math.h>
 #include <string.h>
 
-//will make these configurable
-float constant;
-float multiplier;
-
 //could return this struct
 struct info
 {
@@ -19,6 +15,8 @@ struct info
 	int height;
         int cPixels;
 	int dotsize;
+        float constant;
+        float multiplier;
 
         float maxF;
         float minF;
@@ -136,7 +134,8 @@ float* calcDensity(struct info *inf, float *points, int cPoints, int weighted)
     int height = inf->height;
     int cPixels = inf->cPixels;
     int dotsize = inf->dotsize;
-    
+    float constant = inf->constant;    
+    float multiplier = inf->multiplier;    
     //create the float array, maloc as initialise to floats later
     float* pixels = (float *)malloc(cPixels*sizeof(float)); 
 
@@ -177,7 +176,7 @@ float* calcDensity(struct info *inf, float *points, int cPoints, int weighted)
                 if(dist>radius) continue; // stop point contributing to pixels outside its radius
            
                 ndx = k*width + j;
-                if(ndx >= (int)width*height) continue;   // ndx can be greater than array bounds
+                if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
 
                 ndx = k*width + j;
                 if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
@@ -259,7 +258,8 @@ unsigned char *tx(float *points,
                   int opacity, 
                   int boundsOverride, 
                   float minX, float minY, float maxX, float maxY,
-                  int weighted, float mult, float cnst)
+                  int weighted, float mult, float cnst,
+                  float *minmax)
 {
     unsigned char *pixels_bw = NULL;
     float *floats_bw = NULL;
@@ -279,8 +279,8 @@ unsigned char *tx(float *points,
     inf.height = h;
     inf.cPixels = w*h;
 
-    multiplier = mult;
-    constant = cnst;
+    inf.multiplier = mult;
+    inf.constant = cnst;
  
     // get min/max x/y values from point list
     if (boundsOverride == 1)
@@ -311,6 +311,9 @@ unsigned char *tx(float *points,
     //no longer need the 0-255 pixels
     free(pixels_bw);
     pixels_bw = NULL;
+
+    minmax[0] = inf.minF;
+    minmax[1] = inf.maxF;
 
     //return list of RGBA values
     return pix_color;
