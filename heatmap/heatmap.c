@@ -15,6 +15,7 @@ struct info
 
 	int width;
 	int height;
+        int cPixels;
 	int dotsize;
 };
 
@@ -96,13 +97,14 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
 {
     int width = inf->width;
     int height = inf->height;
+    int cPixels = inf->cPixels;
     int dotsize = inf->dotsize;
     
-    unsigned char* pixels = (unsigned char *)malloc(width*height*sizeof(char)); 
+    unsigned char* pixels = (unsigned char *)malloc(cPixels*sizeof(char)); 
 
     float midpt = dotsize / 2.f;
-    double radius = sqrt(midpt*midpt + midpt*midpt) / 2.f;
-    double dist = 0.0;
+    float radius = sqrt(midpt*midpt + midpt*midpt) / 2.f;
+    float dist = 0.0;
     int pixVal = 0;
     int j = 0;
     int k = 0;
@@ -114,7 +116,7 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
     if (weighted) inc = 3;
 
     // initialize image data to white
-    for(i = 0; i < (int)width*height; i++) 
+    for(i = 0; i < cPixels; i++) 
     {
         pixels[i] = 0xff;
     }
@@ -136,7 +138,7 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
                 
                 if(dist>radius) continue; // stop point contributing to pixels outside its radius
 
-                if (weighted)
+                if(weighted)
                 {
                   pixVal = (int)((multiplier*(dist/radius)+constant)/points[i+2]);
                 }
@@ -147,7 +149,7 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
                 if (pixVal > 255) pixVal = 255;
 
                 ndx = k*width + j;
-                if(ndx >= (int)width*height) continue;   // ndx can be greater than array bounds
+                if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
 
                 #ifdef DEBUG
                 printf("pt.x: %.2f pt.y: %.2f j: %d k: %d ndx: %d\n", pt.x, pt.y, j, k, ndx);
@@ -164,15 +166,14 @@ unsigned char* calcDensity(struct info *inf, float *points, int cPoints, int wei
 unsigned char *colorize(struct info *inf, unsigned char* pixels_bw, int *scheme, unsigned char* pixels_color, 
               int opacity)
 {
-    int width = inf->width;
-    int height = inf->height;
+    int cPixels = inf->cPixels;
     
     int i = 0;
     int pix = 0;
     int highCount = 0;
     int alpha = opacity;
 
-    for(i = 0; i < (int)width*height; i++)
+    for(i = 0; i < cPixels; i++)
     {
         pix = pixels_bw[i];
 
@@ -188,7 +189,7 @@ unsigned char *colorize(struct info *inf, unsigned char* pixels_bw, int *scheme,
         pixels_color[i*4+3] = alpha;
     } 
     
-    if (highCount > width*height*0.8)
+    if (highCount > cPixels*0.8)
     {   
         fprintf(stderr, "Warning: 80%% of output pixels are over 95%% density.\n");
         fprintf(stderr, "Decrease dotsize or increase output image resolution?\n");
@@ -215,16 +216,17 @@ unsigned char *tx(float *points,
 
     //basic sanity checks to keep from segfaulting
     if (NULL == points || NULL == scheme || NULL == pix_color ||
-        w <= 0 || h <= 0 || cPoints <= 1 || opacity < 0 || dotsize <= 0)
+        w <= 0 || h <= 0 || cPoints <= 1+weighted || cPoints % (2+weighted) != 0 ||
+        opacity < 0 || dotsize <= 0)
     {
         fprintf(stderr, "Invalid parameter; aborting.\n");
         return NULL;
     }
     
-    
     inf.dotsize = dotsize;
     inf.width = w;
     inf.height = h;
+    inf.cPixels = w*h;
  
     // get min/max x/y values from point list
     if (boundsOverride == 1)

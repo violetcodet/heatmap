@@ -16,9 +16,9 @@ except:
 
 class Heatmap:
     """
-    Create heatmaps from a list of 2D coordinates.
+    Create heatmaps from a list of 2D coordinates with optional weighting per coordinate pair.
 
-    Heatmap requires the Python Imaging Library and Python 2.5+ for ctypes.
+    Heatmap requires the Python Imaging Library and Python 2.6+ for Python3 backports.
 
     Coordinates autoscale to fit within the image dimensions, so if there are
     anomalies or outliers in your dataset, results won't be what you expect. You
@@ -28,6 +28,9 @@ class Heatmap:
     image or such.  You can also save a KML file to use in Google Maps if x/y coordinates
     are lat/long coordinates. Make your own wardriving maps or visualize the footprint of
     your wireless network.
+
+    For accurate geospatial results it is advised to use the optional [proj] install.
+    This also allows for output in other coordinate systems such as Mercator.
 
     Most of the magic starts in heatmap(), see below for description of that function.
     """
@@ -87,28 +90,39 @@ class Heatmap:
         if not self._heatmap:
             raise Exception("Heatmap shared library not found in PYTHONPATH.")
 
-    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, weighted=0, srcepsg=None, dstepsg='EPSG:3857'):
+    def heatmap(self, points, dotsize=150, opacity=128, size=(1024, 1024), scheme="classic", area=None, 
+                weighted=0, srcepsg=None, dstepsg='EPSG:3857'):
         """
-        points  -> an iterable list of tuples, where the contents are the
-                   x,y coordinates to plot. e.g., [(1, 1), (2, 2), (3, 3)]
-        dotsize -> the size of a single coordinate in the output image in
-                   pixels, default is 150px.  Tweak this parameter to adjust
-                   the resulting heatmap.
-        opacity -> the strength of a single coordiniate in the output image.
-                   Tweak this parameter to adjust the resulting heatmap.
-        size    -> tuple with the width, height in pixels of the output PNG
-        scheme  -> Name of color scheme to use to color the output image.
-                   Use schemes() to get list.  (images are in source distro)
-        area    -> Specify bounding coordinates of the output image. Tuple of
-                   tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
-                   these values are calculated based on the input data.
-        weighted -> Is the data weighted
-        srcepsg    -> epsg code of the source, set to None to ignore.
-                      If using KML output make sure this is set otherwise either the image
-                      or the overlay coordinates will be out.
-        dstepsg    -> epsg code of the destination, ignored if srcepsg is not set. Defaults to EPSG:3857 (Cylindrical Mercator). 
-                      Due to linear interpolation in heatmap.c it only makes sense to use linear output projections. 
-                      If outputting to KML for google earth client overlay use EPSG:4087 (World Equidistant Cylindrical)
+        points   -> A representation of the points (x,y values) to process.
+                    Can be a flattened array/tuple or any combination of 2 dimensional 
+                    array or tuple iterables i.e. [x1,y1,x2,y2], [(x1,y1),(x2,y2)], etc.
+                    If weights are being used there are expected to be 3 'columns'
+                    in the 2 dimensionable iterable or a multiple of 3 points in the 
+                    flat array/tuple i.e. (x1,y1,z1,x2,y2,z2), ([x1,y1,z1],[x2,y2,z2]) etc.
+                    The third (weight) value can be anything but it is
+                    best to have a normalised weight between 0 and 1.
+                    For best performance, if convenient use a flattened array 
+                    as this is what is used internally and requires no conversion.
+        dotsize  -> the size of a single coordinate in the output image in
+                    pixels, default is 150px.  Tweak this parameter to adjust
+                    the resulting heatmap.
+        opacity  -> the strength of a single coordiniate in the output image.
+                    Tweak this parameter to adjust the resulting heatmap.
+        size     -> tuple with the width, height in pixels of the output PNG
+        scheme   -> Name of color scheme to use to color the output image.
+                    Use schemes() to get list.  (images are in source distro)
+        area     -> Specify bounding coordinates of the output image. Tuple of
+                    tuples: ((minX, minY), (maxX, maxY)).  If None or unspecified,
+                    these values are calculated based on the input data.
+        weighted -> Is the data weighted (0 or 1)
+        srcepsg  -> epsg code of the source, set to None to ignore.
+                    If using KML output make sure this is set otherwise either the image
+                    or the overlay coordinates will be out.
+        dstepsg  -> epsg code of the destination, ignored if srcepsg is not set.
+                    Defaults to EPSG:3857 (Cylindrical Mercator). 
+                    Due to linear interpolation in heatmap.c it only makes sense to use linear 
+                    output projections. If outputting to KML for google earth client overlay use 
+                    EPSG:4087 (World Equidistant Cylindrical).
         """
         self.dotsize = dotsize
         self.opacity = opacity
