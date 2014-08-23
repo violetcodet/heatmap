@@ -181,14 +181,7 @@ float* calcDensity(struct info *inf, float *points, int cPoints, int weighted)
                 ndx = k*width + j;
                 if(ndx >= cPixels) continue;   // ndx can be greater than array bounds
 
-                if(weighted)
-                {
-                  pixVal = points[i+2];
-                }
-                else
-                {
-                  pixVal = 1;
-                }
+                pixVal = weighted ? points[i+2] : 1;
                 //if constant == multiplier == 0 or dist == 0 want pixVal == pixVal
                 //could have another function here such a quadratic, exponential decay etc.
                 pixVal = pixVal-pixVal*(multiplier*dist+constant);
