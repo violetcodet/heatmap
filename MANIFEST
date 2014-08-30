@@ -7,6 +7,9 @@ cHeatmap-x86.dll
 setup.py
 examples/example.py
 examples/google-earth.py
+fonts/unique/OFL-FAQ.txt
+fonts/unique/OFL.txt
+fonts/unique/Unique.ttf
 heatmap/__init__.py
 heatmap/colorschemes.py
 heatmap/heatmap.c

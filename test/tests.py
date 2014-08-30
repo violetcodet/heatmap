@@ -1,6 +1,6 @@
 import random
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     import unittest2 as unittest
@@ -147,6 +147,14 @@ class TestHeatmap(unittest.TestCase):
         self.assertNotEqual(norm,epsg3857DST)
         #testing conversion of src epsg, image is possibly similar do to linearity at the equator but KML boundary should be very different (not tested)
         epsg3857 = self.heatmapImage("10-400-EPSG3857", pts, kwargs = { "srcepsg" : "EPSG:3857", "dstepsg" : "EPSG:4087",  "size" : (2048, 1024), "dotsize" : 50, "weighted" : 1 }, saveKML = True)
+
+    def test_heatmap_legend(self):
+        pts = [(random.random(), random.random(),50) for x in range(4000)]
+        self.heatmap.heatmap(pts)
+        img = self.heatmap.getLegend(width=128,height=1024,opacity=128,horizontal=False)
+        self.heatmap.saveLegend("legendV.png")
+        img = self.heatmap.getLegend()
+        self.heatmap.saveLegend("legendH.png")
     
     def test_heatmap_exceptions(self):
  
@@ -159,6 +167,12 @@ class TestHeatmap(unittest.TestCase):
       #test saveKML before create heatmap
       saveKMLArgs = [Exception, 'Must first run heatmap', self.heatmap.saveKML,"test.kml"]
       saveKMLKwargs = {}
+      #test heatmap img created before trying to print text on legend
+      legendTextArgs = [Exception, 'Unable to create text overlay', self.heatmap.getLegend]
+      legendTextKwargs = {}
+      #test heatmap legend created before trying to save as file
+      saveLegendArgs = [Exception, 'Legend has not been created yet', self.heatmap.saveLegend,"test.png"]
+      saveLegendKwargs = {}
 
       #better way? no __verison__ in unittest
       try:
@@ -171,10 +185,15 @@ class TestHeatmap(unittest.TestCase):
           emptyHeatmapArgs.pop(1)
           invalidColorSchemeArgs.pop(1)
           saveKMLArgs.pop(1)
+          legendTextArgs.pop(1)
+          saveLegendArgs.pop(1)
       
       function(*emptyHeatmapArgs, **emptyHeatmapKwargs)
       function(*invalidColorSchemeArgs, **invalidColourSchemeKwargs)
       function(*saveKMLArgs, **saveKMLKwargs)
+      #doen't seem to like no args
+      #function(*legendTextArgs, **legendTextKwargs)
+      function(*saveLegendArgs, **saveLegendKwargs)
 
 class TestColorScheme(unittest.TestCase):
     def test_schemes(self):

@@ -4,3 +4,4 @@ include examples/*.py
 include build.bat
 include README
 include LICENSE
+recursive-include fonts *

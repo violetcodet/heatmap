@@ -1,11 +1,13 @@
 import os
+import os.path
 import sys
 import ctypes
 import platform
 import math
 from . import colorschemes
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 import glob
+import array
 
 use_pyproj = False
 try:
@@ -13,6 +15,8 @@ try:
   use_pyproj = True
 except:
   pass
+
+suffixes = ['','K','M','G','T']
 
 class Heatmap:
     """
@@ -55,6 +59,7 @@ class Heatmap:
 
     def __init__(self, libpath=None):
         self.img = None
+        self.legend = None
         # if you're reading this, it's probably because this
         # hacktastic garbage failed.  sorry.  I deserve a jab or two via @jjguy.
 
@@ -130,14 +135,17 @@ class Heatmap:
         """
         self.dotsize = dotsize
         self.opacity = opacity
+        self.scheme = scheme
         self.size = size
         self.points = points
         self.weighted = weighted
         self.srcepsg = srcepsg
         self.dstepsg = dstepsg
 
+        #want mult*dist=1/4 when dist=rad
+        #=> mult = 1/4rad => mult = 2/dotsize
         if mult is None:
-          mult = 8.0/dotsize;
+          mult = 2/dotsize;
 
         if self.srcepsg and not use_pyproj:
           raise Exception('srcepsg entered but pyproj is not available')
@@ -184,6 +192,8 @@ class Heatmap:
 
         self.img = Image.frombuffer('RGBA', (self.size[0], self.size[1]), 
                                     arrFinalImage, 'raw', 'RGBA', 0, 1)
+        #optional smoothing function
+        #ImageEnhance.Sharpness(self.img).enhance(0.1)
         return self.img
 
     def _allocOutputBuffer(self):
@@ -275,3 +285,111 @@ class Heatmap:
         Return a list of available color scheme names.
         """
         return colorschemes.valid_schemes()
+
+    def _prettyMinMax(self,num):
+      """
+      Formats a number to 3 significant digits and an appropriate suffix
+
+      num -> the number to convert
+      """
+      global suffixes
+      for suffix in suffixes:
+        if num < 1000:
+            break
+        else:
+          num = num/1000
+      return '%.3G%s' % (num, suffix)
+
+    def getLegend(self,width=1024,height=128,opacity=None, horizontal=True, xBorder=5,yBorder=5, borderColour="ffffff", textColour="000000", showText=True,
+        minText=None, maxText=None, textSize=None):
+        """
+        Gets a legend image corresponding to the colour scheme selected.
+        If requiring text overlay for min and max values an image already has to exist
+
+        width        -> width of the legend in pixels
+        height       -> height of the legend in pixels
+        opacity      -> opacity of the image (defaults to opacity of the heatmap)
+        horizontal   -> is it a horizontal heatmap (default True)
+        xBorder      -> border around the left and right sides of the legend in pixels
+        yBorder      -> border around the top and bottom sides of the legend in pixels
+        borderColour -> colour to use for the border in RRGGBB (default white FFFFFF)
+        textColour   -> colour to use for the text (if shown) in RRGGBB (default black 000000)
+        showText     -> whether to show the min and max vals on the legend (default True)
+        minText      -> the minimum value override for the text if not happy with prettyMinMax 
+        maxText      -> the maximum value override for the text if not happy with prettyMinMax 
+        textSize     -> the override text size to use, otherwise automatically determined by width
+        """
+
+        #will fail if no heatmap call, .scheme and .opacity do not exist
+        rgb = []
+        for a,b in zip(borderColour[0::2], borderColour[1::2]):
+          rgb.append(int('0x'+a+b,16))
+        legendImage = array.array('B',rgb*width*height*4)
+        scheme = colorschemes.schemes[self.scheme]
+        xpix = width-xBorder*2
+        opacity = self.opacity if opacity is None else opacity
+        textColour = '#' + textColour
+        if horizontal:
+          xpix = width-xBorder*2
+          for x in range(xBorder,width-xBorder):
+            schemeIdx = int(254-(x-xBorder)/xpix*254)
+            for y in range (yBorder,height-yBorder):
+              pixIdx = (y*width+x)*4
+              legendImage[pixIdx] = scheme[schemeIdx][0]
+              legendImage[pixIdx + 1] = scheme[schemeIdx][1]
+              legendImage[pixIdx + 2] = scheme[schemeIdx][2]
+              legendImage[pixIdx + 3] = opacity
+        else:
+          ypix = height-yBorder*2
+          for y in range (yBorder,height-yBorder):
+            schemeIdx = int((y-yBorder)/ypix*254)
+            for x in range(xBorder,width-xBorder):
+              pixIdx = (y*width+x)*4
+              legendImage[pixIdx] = scheme[schemeIdx][0]
+              legendImage[pixIdx + 1] = scheme[schemeIdx][1]
+              legendImage[pixIdx + 2] = scheme[schemeIdx][2]
+              legendImage[pixIdx + 3] = opacity
+        self.legend = Image.frombuffer('RGBA', (width, height),
+                                    legendImage, 'raw', 'RGBA', 0, 1)
+        if showText:
+          if self.img is None:
+            raise Exception('Unable to create text overlay on legend as image does not exist')
+          if textSize is None:
+            fontSize = width/50 if horizontal else width/5
+          font = ImageFont.truetype(os.path.join('fonts','unique','Unique.ttf'),size=int(fontSize))
+          minVal = self._prettyMinMax(self.minVal) if minText is None else  minText
+          maxVal = self._prettyMinMax(self.maxVal) if maxText is None else  maxText
+          (x,y) = font.getsize(str(minVal))
+          (x2,y2) = font.getsize(str(maxVal))
+          draw = ImageDraw.Draw(self.legend)
+          if horizontal:
+            min = (xBorder, int(height/2-y/2))
+            max = (width - xBorder - x2, int(height/2-y2/2))
+          else:
+            min = (int(width/2 - x/2),int(height-yBorder-y))
+            max = (int(width/2 - x2/2), yBorder)
+          draw.text(min,str(minVal),font=font, fill=textColour)
+          draw.text(max,str(maxVal),font=font, fill=textColour)
+
+        #make text opaque?
+        #self.legend.putalpha(opacity)
+        
+        return self.legend
+
+    def saveLegend(self, legendFile):
+      """
+      Save the legend to file
+
+      legendFile -> the file name to save to
+      """
+      if self.legend is None:
+        raise Exception('Legend has not been created yet')
+      self.legend.save(legendFile)
+
+    #lookup for click interface
+    #def getPixelValue(x,y)
+    #currently would be an ugly non accurate reverse lookup to the colourscheme
+    #want the actual non RGB pixel map accessible
+    #if one off need to put in rgb,scheme,min and max val as no saved state.
+    #location (lat long for example) would require translation
+    #def getLocationValue(x,y)
