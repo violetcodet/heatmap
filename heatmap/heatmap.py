@@ -75,9 +75,11 @@ class Heatmap:
             # now rip through everything in sys.path to find 'em.  Should be in site-packages
             # or local dir
             for d in sys.path:
-                if os.path.isfile(os.path.join(d, libname+'.so')):
+                #if os.path.isfile(os.path.join(d, libname+'.so')):
+                if os.path.isfile(os.path.join(d, libname)):
                     self._heatmap = ctypes.cdll.LoadLibrary(
-                        os.path.join(d, libname+'.so'))
+                        #os.path.join(d, libname+'.so'))
+                      os.path.join(d, libname))
             # check for cpython-*.so prefix for object files which seems to be the ones
             # copied on install in the travis python3 environment (even with the same version of setuptools)
             # may investigate further and do the test based on execution environment
