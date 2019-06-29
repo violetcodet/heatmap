@@ -9,11 +9,17 @@ If weights are being used there are expected to be 3 'columns' in the 2 dimensio
 
 
 For exmaple:
+
 import heatmap
+
 import cv2
+
 import numpy as np
+
 h=heatmap.Heatmap()
+
 pts = []
+
 for x in range(400):
         pts.append((random.random(), random.random() ))
 
